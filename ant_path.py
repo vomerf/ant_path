@@ -1,26 +1,47 @@
+import numba as nb
+import numpy as np
 from PIL import Image
 
+@nb.njit
+def simulate(field, ant_x, ant_y, direction):
+    height, width = field.shape
+    
+    while 0 <= ant_x < width and 0 <= ant_y < height:
+        
+        current_value = field[ant_y, ant_x]
+        
+        if current_value == 1:
+            direction = (direction + 1) % 4
+        else:
+            direction = (direction - 1) % 4
+            
+        field[ant_y, ant_x] = 1 - current_value
+        
+        if direction == 0:
+            ant_y += 1  # Перемещение вниз
+        elif direction == 1:
+            ant_x += 1  # Перемещение вправо
+        elif direction == 2:
+            ant_y -= 1  # Перемещение вверх
+        elif direction == 3:
+            ant_x -= 1  # Перемещение влево
 
+    return field
+
+# Инициализация 
 width, height = 1024, 1024
-image = Image.new('1', (width, height), 1)
-x, y = 512, 512
+field = np.ones((width, height), np.uint8)
+ant_x, ant_y = 512, 512 
 direction = 0
-black_count = 0
 
-while 0 <= x < width and 0 <= y < height:
-    pixel_value = image.getpixel((x, y))
-    direction_change = 1 if pixel_value == 1 else -1
-    image.putpixel((x, y), 1 - pixel_value)
-    direction = (direction + direction_change) % 4
-    if direction == 0:
-        y -= 1
-    elif direction == 1:
-        x += 1
-    elif direction == 2:
-        y += 1
-    elif direction == 3:
-        x -= 1
-    black_count += direction_change
+# Симуляция
+field = simulate(field, ant_x, ant_y, direction)
 
-image.save('ant_path.png', 'PNG')
-print(f'Количество черных клеток: {black_count}')
+# Подсчет черных клеток
+black_cells = np.count_nonzero(field == 0)
+
+# Сохранение результата
+img = Image.fromarray(field * 255)
+img.save("ant_field.png")
+
+print(f"Черных клеток: {black_cells}")
